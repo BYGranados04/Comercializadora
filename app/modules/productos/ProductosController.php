@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . "/ProductosModel.php";
+require_once __DIR__ . "/../categorias/CategoriasModel.php";
+require_once __DIR__ . "/../marcas/MarcasModel.php";
 
 class ProductosController extends Controller
 {
@@ -11,6 +13,9 @@ class ProductosController extends Controller
         $this->model = new ProductosModel();
     }
 
+    // =========================
+    // LISTADO
+    // =========================
     public function index()
     {
         RoleMiddleware::requireAdmin();
@@ -27,16 +32,27 @@ class ProductosController extends Controller
         ]);
     }
 
+    // =========================
+    // CREAR
+    // =========================
     public function crear()
     {
         RoleMiddleware::requireAdmin();
 
+        $categoriasModel = new CategoriasModel();
+        $marcasModel     = new MarcasModel();
+
+        $categorias = $categoriasModel->listarActivas();
+        $marcas     = $marcasModel->listarActivas();
+
         $this->view("modules/dashboard/views/_admin_layout", [
-            "title"   => "Crear Producto",
-            "user"    => $_SESSION["user"],
-            "content" => "productos/views/crear",
-            "errors"  => [],
-            "old"     => [],
+            "title"      => "Crear Producto",
+            "user"       => $_SESSION["user"],
+            "content"    => "productos/views/crear",
+            "errors"     => [],
+            "old"        => [],
+            "categorias" => $categorias,
+            "marcas"     => $marcas,
         ]);
     }
 
@@ -56,12 +72,21 @@ class ProductosController extends Controller
         }
 
         if ($errors) {
+            // Recargar catálogos
+            $categoriasModel = new CategoriasModel();
+            $marcasModel     = new MarcasModel();
+
+            $categorias = $categoriasModel->listarActivas();
+            $marcas     = $marcasModel->listarActivas();
+
             $this->view("modules/dashboard/views/_admin_layout", [
-                "title"   => "Crear Producto",
-                "user"    => $_SESSION["user"],
-                "content" => "productos/views/crear",
-                "errors"  => $errors,
-                "old"     => $data,
+                "title"      => "Crear Producto",
+                "user"       => $_SESSION["user"],
+                "content"    => "productos/views/crear",
+                "errors"     => $errors,
+                "old"        => $data,
+                "categorias" => $categorias,
+                "marcas"     => $marcas,
             ]);
             return;
         }
@@ -92,6 +117,9 @@ class ProductosController extends Controller
         exit;
     }
 
+    // =========================
+    // EDITAR
+    // =========================
     public function editar($id)
     {
         RoleMiddleware::requireAdmin();
@@ -102,12 +130,21 @@ class ProductosController extends Controller
             exit;
         }
 
+        // Cargar catálogos para los selects / lookups
+        $categoriasModel = new CategoriasModel();
+        $marcasModel     = new MarcasModel();
+
+        $categorias = $categoriasModel->listarActivas();
+        $marcas     = $marcasModel->listarActivas();
+
         $this->view("modules/dashboard/views/_admin_layout", [
-            "title"    => "Editar Producto",
-            "user"     => $_SESSION["user"],
-            "content"  => "productos/views/editar",
-            "errors"   => [],
-            "producto" => $producto,
+            "title"      => "Editar Producto",
+            "user"       => $_SESSION["user"],
+            "content"    => "productos/views/editar",
+            "errors"     => [],
+            "producto"   => $producto,
+            "categorias" => $categorias,
+            "marcas"     => $marcas,
         ]);
     }
 
@@ -133,12 +170,21 @@ class ProductosController extends Controller
         }
 
         if ($errors) {
+            // Recargar catálogos
+            $categoriasModel = new CategoriasModel();
+            $marcasModel     = new MarcasModel();
+
+            $categorias = $categoriasModel->listarActivas();
+            $marcas     = $marcasModel->listarActivas();
+
             $this->view("modules/dashboard/views/_admin_layout", [
-                "title"    => "Editar Producto",
-                "user"     => $_SESSION["user"],
-                "content"  => "productos/views/editar",
-                "errors"   => $errors,
-                "producto" => array_merge($producto, $data),
+                "title"      => "Editar Producto",
+                "user"       => $_SESSION["user"],
+                "content"    => "productos/views/editar",
+                "errors"     => $errors,
+                "producto"   => array_merge($producto, $data),
+                "categorias" => $categorias,
+                "marcas"     => $marcas,
             ]);
             return;
         }
@@ -164,6 +210,9 @@ class ProductosController extends Controller
         exit;
     }
 
+    // =========================
+    // ELIMINAR (desactivar)
+    // =========================
     public function eliminar($id)
     {
         RoleMiddleware::requireAdmin();
@@ -173,8 +222,9 @@ class ProductosController extends Controller
         exit;
     }
 
-    // ---------- Helpers ----------
-
+    // =========================
+    // HELPERS
+    // =========================
     private function sanitizar(array $input): array
     {
         return [

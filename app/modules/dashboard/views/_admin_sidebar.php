@@ -19,7 +19,7 @@
       <span class="admin-nav-icon">📦</span>
       Productos
     </a>
-    <a href="/admin/categorias" class="admin-nav-item">
+    <a href="/admin/catalogos" class="admin-nav-item">
       <span class="admin-nav-icon">🏷️</span>
       Categorías & Marcas
     </a>

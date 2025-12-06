@@ -1,8 +1,20 @@
 <?php
-$errors      = $errors      ?? [];
-$old         = $old         ?? [];
-$productos   = $productos   ?? [];
+$errors     = $errors ?? [];
+$old        = $old ?? [];
+$productos  = $productos ?? [];
 $proveedores = $proveedores ?? [];
+
+// Para JS: lista de productos (solo lo necesario)
+$productosJs = [];
+foreach ($productos as $p) {
+    $productosJs[] = [
+        'id'    => (int)$p['id'],
+        'nombre'=> $p['nombre'],
+        'sku'   => $p['sku'] ?? '',
+        // costo sugerido para la compra (puede ser costo_actual o precio_venta, usted manda)
+        'costo' => isset($p['costo_actual']) ? (float)$p['costo_actual'] : (float)($p['precio_venta'] ?? 0),
+    ];
+}
 ?>
 
 <div class="card compras-form-card">
@@ -22,23 +34,42 @@ $proveedores = $proveedores ?? [];
       </div>
     <?php endif; ?>
 
-    <form method="POST" action="/admin/compras/guardar">
+    <form method="POST" action="/admin/compras/guardar" id="form-compra">
+      <!-- Encabezado -->
       <div class="grid-2">
         <div class="form-group">
           <label>Proveedor *</label>
-          <select name="proveedor_id" class="input" required>
-            <option value="">-- Seleccione proveedor --</option>
-            <?php foreach ($proveedores as $prov): ?>
-              <?php
-              $selected = ((string)($old['proveedor_id'] ?? '') === (string)$prov['id'])
-                ? 'selected'
-                : '';
-              ?>
-              <option value="<?= (int)$prov['id'] ?>" <?= $selected ?>>
-                <?= htmlspecialchars($prov['nombre']) ?> (<?= htmlspecialchars($prov['nit']) ?>)
-              </option>
-            <?php endforeach; ?>
-          </select>
+
+          <div class="lookup-wrapper">
+            <input type="hidden" name="proveedor_id" id="proveedor_id"
+                   value="<?= htmlspecialchars($old['proveedor_id'] ?? '') ?>">
+
+            <input
+              type="text"
+              id="proveedor_buscar"
+              class="input lookup-input"
+              placeholder="Escriba para buscar proveedor..."
+              autocomplete="off"
+              value="<?= htmlspecialchars($old['proveedor_nombre'] ?? '') ?>"
+            >
+
+            <div class="lookup-results" id="proveedor_results">
+              <?php foreach ($proveedores as $prov): ?>
+                <?php
+                  $pid   = (int)$prov['id'];
+                  $label = htmlspecialchars($prov['nombre']);
+                  $nit   = htmlspecialchars($prov['nit']);
+                ?>
+                <div
+                  class="lookup-item"
+                  data-id="<?= $pid ?>"
+                  data-label="<?= $label ?> (NIT: <?= $nit ?>)"
+                >
+                  <?= $label ?> (NIT: <?= $nit ?>)
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -75,62 +106,99 @@ $proveedores = $proveedores ?? [];
       <hr>
 
       <h2 class="section-title">Detalle de compra</h2>
-      <p class="text-muted">Por ahora se permiten 3 renglones fijos. Luego lo hacemos dinámico.</p>
+      <p class="text-muted">
+        Por ahora se permiten 3 renglones fijos. Luego lo hacemos dinámico.
+      </p>
 
-      <table class="table table-sm">
+      <table class="table table-sm" id="tabla-detalle">
         <thead>
           <tr>
-            <th>Producto</th>
-            <th>Cantidad</th>
-            <th>Costo unitario</th>
-            <th>Descuento</th>
+            <th style="width: 38%;">Producto</th>
+            <th style="width: 14%;">Cantidad</th>
+            <th style="width: 18%;">Costo unitario</th>
+            <th style="width: 15%;">Descuento</th>
+            <th style="width: 15%;">Subtotal</th>
           </tr>
         </thead>
         <tbody>
-          <?php for ($i = 0; $i < 3; $i++): ?>
-            <tr>
-              <td>
-                <!-- ID real que se envía al backend -->
-                <input type="hidden" name="producto_id[]" class="producto-id-hidden">
+        <?php for ($i = 0; $i < 3; $i++): ?>
+          <tr>
+            <td>
+              <div class="lookup-wrapper">
+                <input type="hidden" name="producto_id[]" class="producto-id">
 
-                <!-- Buscador de producto -->
-                <div class="producto-search-wrapper">
-                  <input
-                    type="text"
-                    class="input input-sm producto-search-input"
-                    placeholder="Buscar producto por nombre o SKU"
-                    autocomplete="off"
-                    data-index="<?= $i ?>">
-                  <div class="producto-search-results" data-index="<?= $i ?>"></div>
+                <input
+                  type="text"
+                  class="input input-sm lookup-input producto-buscar"
+                  placeholder="Escriba nombre o SKU..."
+                  autocomplete="off"
+                >
+
+                <div class="lookup-results producto-results">
+                  <!-- JS llena esto -->
                 </div>
-              </td>
-
-              <td>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="cantidad[]"
-                  class="input input-sm">
-              </td>
-              <td>
-                <input
-                  type="number"
-                  step="0.0001"
-                  name="costo_unitario[]"
-                  class="input input-sm">
-              </td>
-              <td>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="descuento[]"
-                  class="input input-sm"
-                  value="0">
-              </td>
-            </tr>
-          <?php endfor; ?>
+              </div>
+            </td>
+            <td>
+              <input
+                type="number"
+                step="0.01"
+                name="cantidad[]"
+                class="input input-sm campo-cantidad"
+                min="0">
+            </td>
+            <td>
+              <input
+                type="number"
+                step="0.0001"
+                name="costo_unitario[]"
+                class="input input-sm campo-costo"
+                min="0">
+            </td>
+            <td>
+              <input
+                type="number"
+                step="0.01"
+                name="descuento[]"
+                class="input input-sm campo-descuento"
+                value="0"
+                min="0">
+            </td>
+            <td>
+              <input
+                type="text"
+                class="input input-sm campo-subtotal"
+                readonly
+                value="0.00">
+            </td>
+          </tr>
+        <?php endfor; ?>
         </tbody>
       </table>
+
+      <!-- Totales -->
+      <div class="grid-2" style="margin-top: 10px;">
+        <div></div>
+        <div>
+          <div class="form-group">
+            <label>Total bruto</label>
+            <input type="text" class="input" id="total_bruto_view" readonly value="0.00">
+          </div>
+          <div class="form-group">
+            <label>Descuento total</label>
+            <input type="text" class="input" id="total_desc_view" readonly value="0.00">
+          </div>
+          <div class="form-group">
+            <label>Total neto</label>
+            <input type="text" class="input" id="total_neto_view" readonly value="0.00">
+          </div>
+        </div>
+      </div>
+
+      <!-- Estos se llenan con JS antes del submit -->
+      <input type="hidden" name="total_bruto" id="total_bruto">
+      <input type="hidden" name="total_descuento" id="total_descuento">
+      <input type="hidden" name="total_neto" id="total_neto">
 
       <div class="form-actions mt-4 flex justify-end gap-2">
         <a href="/admin/compras" class="btn btn-secondary">Cancelar</a>
@@ -141,77 +209,188 @@ $proveedores = $proveedores ?? [];
 </div>
 
 <script>
-  // Catálogo de productos desde PHP hacia JS
-  const PRODUCTOS_CATALOGO = <?=
-                              json_encode(array_map(function ($p) {
-                                return [
-                                  'id'     => (int)$p['id'],
-                                  'sku'    => $p['sku'] ?? '',
-                                  'nombre' => $p['nombre'] ?? '',
-                                ];
-                              }, $productos), JSON_UNESCAPED_UNICODE);
-                              ?>;
+// ---------- LOOKUP PROVEEDOR (ya lo tiene genérico, lo reciclamos) ----------
+function initLookup(input, hidden, results) {
+  if (!input || !hidden || !results) return;
 
-  function filtrarProductos(term) {
-    term = term.toLowerCase().trim();
-    if (!term) return [];
-    return PRODUCTOS_CATALOGO
-      .filter(p => (p.nombre + ' ' + p.sku).toLowerCase().includes(term))
-      .slice(0, 10);
+  const items = Array.from(results.querySelectorAll('.lookup-item'));
+
+  function filtrar() {
+    const term = input.value.trim().toLowerCase();
+    let visible = 0;
+
+    items.forEach(item => {
+      const label = item.dataset.label.toLowerCase();
+      if (!term || label.includes(term)) {
+        item.style.display = 'block';
+        visible++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+
+    results.style.display = visible > 0 ? 'block' : 'none';
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const inputsBusqueda = document.querySelectorAll('.producto-search-input');
+  input.addEventListener('focus', filtrar);
+  input.addEventListener('input', () => {
+    hidden.value = '';
+    filtrar();
+  });
 
-    inputsBusqueda.forEach(input => {
-      const index = input.dataset.index;
-      const resultsBox = document.querySelector(
-        '.producto-search-results[data-index="' + index + '"]'
-      );
-      const hiddenId = input.closest('td').querySelector('.producto-id-hidden');
-
-      input.addEventListener('input', () => {
-        const term = input.value;
-        const results = filtrarProductos(term);
-
-        if (!term || results.length === 0) {
-          resultsBox.style.display = 'none';
-          resultsBox.innerHTML = '';
-          hiddenId.value = '';
-          return;
-        }
-
-        resultsBox.innerHTML = '';
-        results.forEach(p => {
-          const div = document.createElement('div');
-          div.className = 'producto-search-item';
-          div.innerHTML = `
-            <span class="nombre">${p.nombre}</span>
-            <span class="sku">SKU: ${p.sku || 'N/A'} · ID: ${p.id}</span>
-          `;
-          div.addEventListener('click', () => {
-            input.value = p.nombre + (p.sku ? ' (SKU: ' + p.sku + ')' : '');
-            hiddenId.value = p.id;
-            resultsBox.style.display = 'none';
-            resultsBox.innerHTML = '';
-          });
-          resultsBox.appendChild(div);
-        });
-
-        resultsBox.style.display = 'block';
-      });
-
-      input.addEventListener('blur', () => {
-        setTimeout(() => {
-          resultsBox.style.display = 'none';
-        }, 200);
-      });
-
-      input.addEventListener('focus', () => {
-        if (input.value.trim()) {
-          input.dispatchEvent(new Event('input'));
-        }
-      });
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      hidden.value = item.dataset.id;
+      input.value  = item.dataset.label;
+      results.style.display = 'none';
     });
   });
+
+  document.addEventListener('click', (e) => {
+    if (!results.contains(e.target) && e.target !== input) {
+      results.style.display = 'none';
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const inputProv   = document.getElementById('proveedor_buscar');
+  const hiddenProv  = document.getElementById('proveedor_id');
+  const resultsProv = document.getElementById('proveedor_results');
+  initLookup(inputProv, hiddenProv, resultsProv);
+
+  // ---------- LOOKUP PRODUCTO POR FILA ----------
+  const productos = <?= json_encode($productosJs, JSON_UNESCAPED_UNICODE) ?>;
+
+  function initLookupProducto(row) {
+    const input   = row.querySelector('.producto-buscar');
+    const hidden  = row.querySelector('.producto-id');
+    const results = row.querySelector('.producto-results');
+
+    if (!input || !hidden || !results) return;
+
+    function renderLista(term) {
+      const t = term.trim().toLowerCase();
+      results.innerHTML = '';
+
+      const filtrados = productos.filter(p => {
+        const txt = (p.nombre + ' ' + p.sku).toLowerCase();
+        return !t || txt.includes(t);
+      }).slice(0, 20); // límite de resultados
+
+      if (!filtrados.length) {
+        results.style.display = 'none';
+        return;
+      }
+
+      filtrados.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'lookup-item';
+        div.dataset.id    = p.id;
+        div.dataset.label = p.nombre + (p.sku ? ' (SKU: ' + p.sku + ')' : '');
+        div.dataset.costo = p.costo;
+        div.textContent   = div.dataset.label;
+        results.appendChild(div);
+
+        div.addEventListener('click', () => {
+          hidden.value      = p.id;
+          input.value       = div.dataset.label;
+
+          const costoInput  = row.querySelector('.campo-costo');
+          if (costoInput && !costoInput.value) {
+            costoInput.value = p.costo;
+          }
+
+          results.style.display = 'none';
+          recalcularFila(row);
+          recalcularTotales();
+        });
+      });
+
+      results.style.display = 'block';
+    }
+
+    input.addEventListener('focus', () => renderLista(input.value));
+    input.addEventListener('input', () => {
+      hidden.value = '';
+      renderLista(input.value);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!results.contains(e.target) && e.target !== input) {
+        results.style.display = 'none';
+      }
+    });
+  }
+
+  // ---------- CÁLCULOS ----------
+  function recalcularFila(row) {
+    const cantInput  = row.querySelector('.campo-cantidad');
+    const costoInput = row.querySelector('.campo-costo');
+    const descInput  = row.querySelector('.campo-descuento');
+    const subInput   = row.querySelector('.campo-subtotal');
+
+    const cant  = parseFloat(cantInput?.value || 0);
+    const costo = parseFloat(costoInput?.value || 0);
+    const desc  = parseFloat(descInput?.value || 0);
+
+    let subtotal = cant * costo - desc;
+    if (subtotal < 0) subtotal = 0;
+
+    if (subInput) {
+      subInput.value = subtotal.toFixed(2);
+    }
+  }
+
+  function recalcularTotales() {
+    let totalBruto = 0;
+    let totalDesc  = 0;
+
+    document.querySelectorAll('#tabla-detalle tbody tr').forEach(row => {
+      const cantInput  = row.querySelector('.campo-cantidad');
+      const costoInput = row.querySelector('.campo-costo');
+      const descInput  = row.querySelector('.campo-descuento');
+
+      const cant  = parseFloat(cantInput?.value || 0);
+      const costo = parseFloat(costoInput?.value || 0);
+      const desc  = parseFloat(descInput?.value || 0);
+
+      if (cant > 0 && costo >= 0) {
+        totalBruto += cant * costo;
+        totalDesc  += desc > 0 ? desc : 0;
+      }
+    });
+
+    const totalNeto = totalBruto - totalDesc;
+
+    document.getElementById('total_bruto_view').value = totalBruto.toFixed(2);
+    document.getElementById('total_desc_view').value  = totalDesc.toFixed(2);
+    document.getElementById('total_neto_view').value  = totalNeto.toFixed(2);
+
+    document.getElementById('total_bruto').value      = totalBruto.toFixed(2);
+    document.getElementById('total_descuento').value  = totalDesc.toFixed(2);
+    document.getElementById('total_neto').value       = totalNeto.toFixed(2);
+  }
+
+  // Inicializar filas
+  document.querySelectorAll('#tabla-detalle tbody tr').forEach(row => {
+    initLookupProducto(row);
+
+    ['.campo-cantidad', '.campo-costo', '.campo-descuento'].forEach(sel => {
+      const input = row.querySelector(sel);
+      if (input) {
+        input.addEventListener('input', () => {
+          recalcularFila(row);
+          recalcularTotales();
+        });
+      }
+    });
+  });
+
+  // Antes de enviar, aseguramos totales frescos
+  const form = document.getElementById('form-compra');
+  form.addEventListener('submit', () => {
+    recalcularTotales();
+  });
+});
 </script>

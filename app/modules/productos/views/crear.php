@@ -1,8 +1,24 @@
 <?php
-$errors     = $errors     ?? [];
-$old        = $old        ?? [];
-$categorias = $categorias ?? []; // opcional: lista de categorías desde el controlador
-$marcas     = $marcas     ?? []; // opcional: lista de marcas desde el controlador
+$errors     = $errors ?? [];
+$old        = $old ?? [];
+$categorias = $categorias ?? [];
+$marcas     = $marcas ?? [];
+
+// Mapear ID → nombre para rellenar el texto si viene "old"
+$mapCat = [];
+foreach ($categorias as $c) {
+    $mapCat[(int)$c['id']] = $c['nombre'];
+}
+$mapMar = [];
+foreach ($marcas as $m) {
+    $mapMar[(int)$m['id']] = $m['nombre'];
+}
+
+$oldCatId   = (int)($old['categoria_id'] ?? 0);
+$oldMarcaId = (int)($old['marca_id'] ?? 0);
+
+$oldCatText   = $oldCatId && isset($mapCat[$oldCatId])   ? $mapCat[$oldCatId]   : '';
+$oldMarcaText = $oldMarcaId && isset($mapMar[$oldMarcaId]) ? $mapMar[$oldMarcaId] : '';
 ?>
 
 <div class="card productos-form-card" style="max-width: 980px; margin: 18px auto;">
@@ -67,69 +83,80 @@ $marcas     = $marcas     ?? []; // opcional: lista de marcas desde el controlad
         </div>
       </div>
 
-      <!-- Fila 3: categoría / marca -->
+      <!-- Fila 3: CATEGORÍA / MARCA con buscador tipo proveedor -->
       <div class="grid-2">
 
-        <!-- Categoría -->
+        <!-- CATEGORÍA -->
         <div class="form-group">
           <label>Categoría *</label>
 
-          <?php if (!empty($categorias)): ?>
-            <!-- Si el controlador ya envía categorías, mostrar select por nombre -->
-            <select name="categoria_id" class="input" required>
-              <option value="">-- Seleccione categoría --</option>
-              <?php foreach ($categorias as $cat): ?>
-                <?php
-                $sel = (string)($old['categoria_id'] ?? '') === (string)$cat['id']
-                  ? 'selected'
-                  : '';
-                ?>
-                <option value="<?= (int)$cat['id'] ?>" <?= $sel ?>>
-                  <?= htmlspecialchars($cat['nombre']) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          <?php else: ?>
-            <!-- Fallback actual por ID mientras no exista el catálogo -->
+          <div class="lookup-wrapper">
+            <!-- ID real que se envía al backend -->
+            <input type="hidden" name="categoria_id" id="categoria_id"
+                   value="<?= $oldCatId ?>">
+
+            <!-- Input visible para buscar / mostrar nombre -->
             <input
-              type="number"
-              name="categoria_id"
-              class="input"
-              required
-              min="1"
-              value="<?= htmlspecialchars($old['categoria_id'] ?? '1') ?>">
-          <?php endif; ?>
+              type="text"
+              id="categoria_buscar"
+              class="input lookup-input"
+              placeholder="Escriba para buscar categoría..."
+              autocomplete="off"
+              value="<?= htmlspecialchars($oldCatText) ?>"
+            >
+
+            <!-- Lista de resultados -->
+            <div class="lookup-results" id="categoria_results">
+              <?php foreach ($categorias as $c): ?>
+                <?php
+                  $id   = (int)$c['id'];
+                  $text = htmlspecialchars($c['nombre']);
+                ?>
+                <div
+                  class="lookup-item"
+                  data-id="<?= $id ?>"
+                  data-label="<?= $text ?>"
+                >
+                  <?= $text ?>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
         </div>
 
-        <!-- Marca -->
+        <!-- MARCA -->
         <div class="form-group">
           <label>Marca *</label>
 
-          <?php if (!empty($marcas)): ?>
-            <!-- Si el controlador ya envía marcas, mostrar select por nombre -->
-            <select name="marca_id" class="input" required>
-              <option value="">-- Seleccione marca --</option>
+          <div class="lookup-wrapper">
+            <input type="hidden" name="marca_id" id="marca_id"
+                   value="<?= $oldMarcaId ?>">
+
+            <input
+              type="text"
+              id="marca_buscar"
+              class="input lookup-input"
+              placeholder="Escriba para buscar marca..."
+              autocomplete="off"
+              value="<?= htmlspecialchars($oldMarcaText) ?>"
+            >
+
+            <div class="lookup-results" id="marca_results">
               <?php foreach ($marcas as $m): ?>
                 <?php
-                $sel = (string)($old['marca_id'] ?? '') === (string)$m['id']
-                  ? 'selected'
-                  : '';
+                  $id   = (int)$m['id'];
+                  $text = htmlspecialchars($m['nombre']);
                 ?>
-                <option value="<?= (int)$m['id'] ?>" <?= $sel ?>>
-                  <?= htmlspecialchars($m['nombre']) ?>
-                </option>
+                <div
+                  class="lookup-item"
+                  data-id="<?= $id ?>"
+                  data-label="<?= $text ?>"
+                >
+                  <?= $text ?>
+                </div>
               <?php endforeach; ?>
-            </select>
-          <?php else: ?>
-            <!-- Fallback por ID -->
-            <input
-              type="number"
-              name="marca_id"
-              class="input"
-              required
-              min="1"
-              value="<?= htmlspecialchars($old['marca_id'] ?? '1') ?>">
-          <?php endif; ?>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -185,8 +212,7 @@ $marcas     = $marcas     ?? []; // opcional: lista de marcas desde el controlad
       </div>
 
       <!-- Checkbox requiere serie -->
-      <div class="form-group"
-        style="margin-top: 8px; flex-direction: row; align-items: center; gap: 8px;">
+      <div class="form-group" style="margin-top: 8px; flex-direction: row; align-items: center; gap: 8px;">
         <input
           id="requiere_serie"
           type="checkbox"
@@ -206,3 +232,64 @@ $marcas     = $marcas     ?? []; // opcional: lista de marcas desde el controlad
     </form>
   </div>
 </div>
+
+<script>
+// Lookup genérico (mismo UX que proveedor)
+function initLookup(inputId, hiddenId, resultsId) {
+  const input   = document.getElementById(inputId);
+  const hidden  = document.getElementById(hiddenId);
+  const results = document.getElementById(resultsId);
+
+  if (!input || !hidden || !results) return;
+
+  const items = Array.from(results.querySelectorAll('.lookup-item'));
+
+  function filtrar() {
+    const term = input.value.trim().toLowerCase();
+    let visible = 0;
+
+    items.forEach(item => {
+      const label = item.dataset.label.toLowerCase();
+      if (!term || label.includes(term)) {
+        item.style.display = 'block';
+        visible++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+
+    results.style.display = visible > 0 ? 'block' : 'none';
+  }
+
+  input.addEventListener('focus', () => {
+    filtrar();
+  });
+
+  input.addEventListener('input', () => {
+    hidden.value = ''; // si cambia texto, invalidamos selección
+    filtrar();
+  });
+
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      const id    = item.dataset.id;
+      const label = item.dataset.label;
+
+      hidden.value = id;
+      input.value  = label;
+      results.style.display = 'none';
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!results.contains(e.target) && e.target !== input) {
+      results.style.display = 'none';
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  initLookup('categoria_buscar', 'categoria_id', 'categoria_results');
+  initLookup('marca_buscar', 'marca_id', 'marca_results');
+});
+</script>

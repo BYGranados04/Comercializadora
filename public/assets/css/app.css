@@ -1654,3 +1654,295 @@ body::-webkit-scrollbar-corner,
 .producto-search-item:hover {
   background: #eff6ff;
 }
+
+/* =========================
+   PROVEEDORES – LISTADO
+   (tabla + badges + botones)
+========================= */
+
+/* Tabla de proveedores: reutiliza .compras-table pero afinamos detalles */
+.table.compras-table.proveedores-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table.compras-table.proveedores-table th,
+.table.compras-table.proveedores-table td {
+  vertical-align: middle;
+  padding: 10px 14px;
+}
+
+/* Fila con hover suave y ligera elevación */
+.table.compras-table.proveedores-table tbody tr {
+  transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+}
+
+.table.compras-table.proveedores-table tbody tr:hover {
+  background: #f9fafb;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+/* Última columna (ACCIONES) centrada */
+.table.compras-table.proveedores-table td:last-child {
+  text-align: center;
+}
+
+/* =========================
+   BADGES DE ESTADO
+========================= */
+
+.badge-status-proveedor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-status-proveedor--activo {
+  background: #dcfce7;
+  color: #166534;
+  box-shadow: 0 0 0 1px rgba(22, 101, 52, 0.12);
+}
+
+.badge-status-proveedor--inactivo {
+  background: #fee2e2;
+  color: #991b1b;
+  box-shadow: 0 0 0 1px rgba(153, 27, 27, 0.12);
+}
+/* Fila de proveedores: hover suave pero sin movimiento */
+.table.compras-table.proveedores-table tbody tr {
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.table.compras-table.proveedores-table tbody tr:hover {
+  background: #f9fafb;
+  /* sin transform para que no “salte” */
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+/* Botón Activar/Desactivar estable */
+.btn-estado {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: #4b5563;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(17, 24, 39, 0.22);
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+  outline: none;
+  min-width: 110px;   /* mismo ancho para Activar / Desactivar */
+}
+
+.btn-estado:hover {
+  background: #374151;
+  /* sin transform para que no se mueva */
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
+}
+
+/* Variante para “Activar” */
+.btn-estado.btn-estado--activar {
+  background: #0b2f6e;
+  box-shadow: 0 6px 14px rgba(10, 61, 145, 0.28);
+}
+
+.btn-estado.btn-estado--activar:hover {
+  background: #0a3d91;
+  box-shadow: 0 8px 20px rgba(10, 61, 145, 0.35);
+}
+
+
+/* =========================
+   CATEGORÍAS & MARCAS – UI
+========================= */
+
+.catalogos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.catalogos-card {
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+  background: #ffffff;
+  padding: 18px 18px 20px;
+}
+
+.catalogos-card-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0b2f6e;
+  margin-bottom: 12px;
+}
+
+.catalogos-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.catalogos-form .input {
+  flex: 1 1 auto;
+}
+
+/* Tablas dentro de la pantalla de catálogos */
+.catalogos-table th,
+.catalogos-table td {
+  font-size: 0.85rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .catalogos-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================
+   BUSCADOR DE PRODUCTOS EN COMPRAS
+========================= */
+
+.producto-lookup {
+  position: relative;
+}
+
+.producto-lookup .producto-buscar {
+  padding-right: 32px; /* espacio por si luego quiere poner un icono de lupa */
+}
+
+/* Contenedor del dropdown */
+.producto-sugerencias {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: #ffffff;
+  border-radius: 10px;
+  margin-top: 4px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  display: none;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+/* Lista interna */
+.producto-sugerencias-list {
+  list-style: none;
+  padding: 6px 0;
+  margin: 0;
+}
+
+/* Item de sugerencia */
+.producto-sugerencia-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+}
+
+.producto-sugerencia-item .prod-linea {
+  display: flex;
+  flex-direction: column;
+}
+
+.producto-sugerencia-item .prod-nombre {
+  font-weight: 600;
+  color: #111827;
+}
+
+.producto-sugerencia-item .prod-sku {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Hover / selección con teclado */
+.producto-sugerencia-item:hover,
+.producto-sugerencia-item.is-active {
+  background: #eff6ff;
+}
+
+/* =========================
+   LOOKUP (Proveedor / Producto)
+========================= */
+
+.lookup {
+  position: relative;
+}
+
+.lookup .lookup-text {
+  padding-right: 32px; /* por si luego quiere icono de lupa */
+}
+
+/* Contenedor del dropdown */
+.lookup-sugerencias {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: #ffffff;
+  border-radius: 10px;
+  margin-top: 4px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  display: none;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+/* Lista interna */
+.lookup-list {
+  list-style: none;
+  padding: 6px 0;
+  margin: 0;
+}
+
+/* Item */
+.lookup-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+}
+
+.lookup-linea {
+  display: flex;
+  flex-direction: column;
+}
+
+.lookup-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.lookup-extra {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Hover / seleccionado con teclado */
+.lookup-item:hover,
+.lookup-item.is-active {
+  background: #eff6ff;
+}
